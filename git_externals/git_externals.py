@@ -177,7 +177,7 @@ def sparse_checkout(repo_name, repo, dirs):
         git('remote', 'add', '-f', 'origin', repo)
         git('config', 'core.sparsecheckout', 'true')
 
-        with open(os.path.join('.git', 'info', 'sparse-checkout'), 'wt') as fp:
+        with open(os.path.join('.git', 'info', 'sparse-checkout'), 'wb') as fp:
             fp.write('{}\n'.format(externals_json_path()))
             for d in dirs:
                 # assume directories are terminated with /
@@ -236,7 +236,7 @@ def externals_sanity_check():
     root = root_path()
 
     def registry_add(url, path, ext):
-        registry[url].add(ExtItem(ext['branch'], ext['ref'], path, ext.get('name', '')))
+        registry[url].add(ExtItem(ext.get('branch',ext.get('tag','')), ext.get('ref',''), path, ext.get('name', '')))
 
     foreach_externals(root, registry_add, recursive=True)
     errmsg = None
@@ -301,6 +301,7 @@ def gitext_up(recursive, entries=None, reset=False, use_gitsvn=False):
     def egit(command, *args):
         if command == 'checkout' and reset:
             args = ('--force',) + args
+        # print("git: {}, {}, pwd:{}".format(command, " ".join(args), os.getcwd()))
         git(command, *args, capture=False)
 
     def git_initial_checkout(repo_name, repo_url):
@@ -311,6 +312,11 @@ def gitext_up(recursive, entries=None, reset=False, use_gitsvn=False):
             sparse_checkout(repo_name, repo_url, dirs)
         else:
             egit('clone', repo_url, repo_name)
+        if 'bundle' in git_externals[ext_repo]:
+            rp = root_path()
+            with chdir(repo_name):
+                egit('remote', 'add', 'bundle', os.path.join(rp,
+                    git_externals[ext_repo]['bundle'].replace('/', os.path.sep)))
 
     def git_update_checkout(reset):
         """Update an already existing git working tree"""
@@ -332,7 +338,7 @@ def gitext_up(recursive, entries=None, reset=False, use_gitsvn=False):
                 egit('checkout', rev)
 
     def get_rev(ext_repo, mode='git'):
-        ref = git_externals[ext_repo]['ref']
+        ref = git_externals[ext_repo].get('ref',None)
         return resolve_revision(ref, mode)
 
     def gitsvn_initial_checkout(repo_name, repo_url):
@@ -456,7 +462,11 @@ def print_gitext_info(ext_repo, ext, root_dir, checkout=False):
         click.echo('Tag:    {}'.format(ext['tag']))
     else:
         click.echo('Branch: {}'.format(ext['branch']))
-        click.echo('Ref:    {}'.format(ext['ref']))
+        if 'ref' in ext:
+            click.echo('Ref:    {}'.format(ext['ref']))
+
+    if 'bundle' in ext:
+        click.echo('Bundle: {}'.format(ext['bundle']))
 
     if 'name' in ext:
         click.echo('Name:    {}'.format(ext['name']))

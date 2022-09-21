@@ -172,9 +172,10 @@ def gitext_diff(external):
 @click.option('--branch', '-b', default=None, help='Checkout the given branch')
 @click.option('--tag', '-t', default=None, help='Checkout the given tag')
 @click.option('--ref', '-r', default=None, help='Checkout the given commit sha')
+@click.option('--bundle', '-B', metavar='PATH', default=None, help='Fetch also from the given git bundle')
 @click.option('--vcs', '-c', default='auto', help='Version Control System (default: autodetect)',
               type=click.Choice(['svn', 'git', 'auto']))
-def gitext_add(external, src, dst, branch, tag, ref, vcs):
+def gitext_add(external, src, dst, branch, tag, ref, bundle, vcs):
     """Add a git external to the current repo.
 
     Be sure to add '/' to `src` if it's a directory!
@@ -204,6 +205,8 @@ def gitext_add(external, src, dst, branch, tag, ref, vcs):
             git_externals.update(normalize_gitexts({external: git_externals[external]}))
         else:
             git_externals[external]['vcs'] = vcs
+        if git_externals[external]['vcs'] == 'git' and bundle is not None:
+            git_externals[external]['bundle'] = bundle
 
     else:
         if branch is not None:
@@ -247,6 +250,7 @@ def gitext_freeze(externals, messages):
 
         bare_svn = False
         if git_externals[rel_url]["vcs"] == "svn":
+            remote_name = None
             revision = command('svnversion', '-c').strip()
             match = re_from_svnversion.search(revision)
             if match:
@@ -262,15 +266,19 @@ def gitext_freeze(externals, messages):
                     error("Unsupported external format, svn or git-svn repo expected:\n\t{}".format(here))
         else:
             branch_name = current_branch()
-            remote_name = git("config", "branch.%s.remote" % branch_name)
-            revision = git("log", "%s/%s" % (remote_name, branch_name), "-1", "--format=%H")
+            remote_name = git("config", "branch.%s.remote" % branch_name).strip()
+            if remote_name != 'bundle':
+                revision = git("log", "%s/%s" % (remote_name, branch_name), "-1", "--format=%H")
+            else:
+                bundle = os.path.relpath(git("config", "remote.bundle.url").strip(), repo_root)
 
-        info("Freeze {0} at {1}".format(rel_url, revision))
-        if messages and not bare_svn:
-            old = resolve_revision(git_externals[rel_url]["ref"])
-            new = resolve_revision(revision)
-            git("log", "--format=- %h %s", "{}..{}".format(old, new), capture=False)
-        git_externals[rel_url]["ref"] = revision
+        info("Freeze {0} at {1}".format(rel_url, revision if remote_name != 'bundle' else bundle))
+        if remote_name != 'bundle':
+            if messages and not bare_svn:
+                old = resolve_revision(git_externals[rel_url]["ref"])
+                new = resolve_revision(revision)
+                git("log", "--format=- %h %s", "{}..{}".format(old, new), capture=False)
+            git_externals[rel_url]["ref"] = revision
 
     foreach_externals_dir(repo_root, get_version, only=externals)
 
