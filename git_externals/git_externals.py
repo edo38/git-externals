@@ -209,6 +209,13 @@ def is_workingtree_clean(path, fail_on_empty=True):
             echo('Couldn\'t retrieve Git status of', path)
             error(str(err), exitcode=err.errcode)
 
+def commondirname(*paths):
+    subpath = os.path.commonprefix(paths)
+    for path in paths:
+        if path == subpath:
+            return subpath
+    else:
+        return os.path.join(os.path.split(subpath)[0], "")
 
 def link_entries(git_externals):
     entries = [(get_repo_name(repo), src, os.path.join(os.getcwd(), dst.replace('/', os.path.sep)))
@@ -226,8 +233,13 @@ def link_entries(git_externals):
     # link starting from the highest dst
     for repo_name, src, dst in entries:
         with chdir(os.path.join(externals_root_path(), repo_name)):
-            mkdir_p(os.path.split(dst)[0])
-            link(os.path.abspath(src), dst)
+            sdst = os.path.split(dst)
+            mkdir_p(sdst[0])
+            cdn = commondirname(os.path.abspath(src), dst)
+            src = os.path.join( os.path.relpath(cdn, sdst[0]),
+                  os.path.relpath(os.path.abspath(src), cdn))
+            # src = os.path.abspath(src)
+            link(src, dst)
 
 
 def externals_sanity_check():
