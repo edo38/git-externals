@@ -8,7 +8,7 @@ import re
 
 import click
 
-if __package__ is None:
+if __package__ is None and (not '__loader__' in dir() or __loader__.__class__.__name__ != 'zipimporter'):
     from __init__ import __version__
     from utils import command, CommandError, chdir, git, ProgError
 else:

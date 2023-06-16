@@ -2,7 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
-if __package__ is None:
+if __package__ is None and (not '__loader__' in dir() or __loader__.__class__.__name__ != 'zipimporter'):
     import sys
     from os import path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
