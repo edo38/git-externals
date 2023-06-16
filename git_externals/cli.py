@@ -52,7 +52,10 @@ def cli(ctx, with_color):
     file into `.git_externals/` and symlinks them to recreate the wanted
     directory layout.
     """
-    from git_externals import is_git_repo, externals_json_path, externals_root_path
+    if __package__ is None:
+        from git_externals  import is_git_repo, externals_json_path, externals_root_path
+    else:
+        from .git_externals import is_git_repo, externals_json_path, externals_root_path
 
     if not is_git_repo():
         error("{} is not a git repository!".format(os.getcwd()), exitcode=2)
@@ -77,7 +80,10 @@ def cli(ctx, with_color):
 def gitext_foreach(recursive, subcommand):
     """Evaluates an arbitrary shell command in each checked out external
     """
-    from git_externals import externals_sanity_check, get_repo_name, foreach_externals_dir, root_path
+    if __package__ is None:
+        from git_externals  import externals_sanity_check, get_repo_name, foreach_externals_dir, root_path
+    else:
+        from .git_externals import externals_sanity_check, get_repo_name, foreach_externals_dir, root_path
 
     externals_sanity_check()
 
@@ -101,7 +107,10 @@ def gitext_foreach(recursive, subcommand):
 def gitext_update(recursive, gitsvn, reset):
     """Update the working copy cloning externals if needed and create the desired layout using symlinks
     """
-    from git_externals import externals_sanity_check, root_path, is_workingtree_clean, foreach_externals, gitext_up
+    if __package__ is None:
+        from git_externals  import externals_sanity_check, root_path, is_workingtree_clean, foreach_externals, gitext_up
+    else:
+        from .git_externals import externals_sanity_check, root_path, is_workingtree_clean, foreach_externals, gitext_up
 
     externals_sanity_check()
     root = root_path()
@@ -138,8 +147,10 @@ def gitext_update(recursive, gitsvn, reset):
 @click.argument('externals', nargs=-1)
 def gitext_st(porcelain, verbose, externals):
     """Call git status on the given externals"""
-    from git_externals import foreach_externals_dir, root_path, \
-                              is_workingtree_clean, get_repo_name
+    if __package__ is None:
+        from git_externals  import foreach_externals_dir, root_path, is_workingtree_clean, get_repo_name
+    else:
+        from .git_externals import foreach_externals_dir, root_path, is_workingtree_clean, get_repo_name
 
     def get_status(rel_url, ext_path, targets):
         try:
@@ -159,7 +170,10 @@ def gitext_st(porcelain, verbose, externals):
 @click.argument('external', nargs=-1)
 def gitext_diff(external):
     """Call git diff on the given externals"""
-    from git_externals import iter_externals
+    if __package__ is None:
+        from git_externals  import iter_externals
+    else:
+        from .git_externals import iter_externals
     for _ in iter_externals(external):
         click.echo(git('diff'))
 
@@ -187,7 +201,10 @@ def gitext_add(external, src, dst, branch, tag, ref, bundle, vcs):
 
     It requires one of --branch or --tag.
     """
-    from git_externals import load_gitexts, dump_gitexts, normalize_gitexts, print_gitext_info
+    if __package__ is None:
+        from git_externals  import load_gitexts, dump_gitexts, normalize_gitexts, print_gitext_info
+    else:
+        from .git_externals import load_gitexts, dump_gitexts, normalize_gitexts, print_gitext_info
 
     git_externals = load_gitexts()
 
@@ -238,7 +255,11 @@ def gitext_add(external, src, dst, branch, tag, ref, bundle, vcs):
 @click.argument('externals', nargs=-1, metavar='NAME')
 def gitext_freeze(externals, messages):
     """Freeze the externals revision"""
-    from git_externals import load_gitexts, dump_gitexts, foreach_externals_dir, root_path, resolve_revision
+    if __package__ is None:
+        from git_externals  import load_gitexts, dump_gitexts, foreach_externals_dir, root_path, resolve_revision
+    else:
+        from .git_externals import load_gitexts, dump_gitexts, foreach_externals_dir, root_path, resolve_revision
+
     git_externals = load_gitexts()
     repo_root = root_path()
     re_from_git_svn_id = re.compile("git-svn-id:.*@(\d+)")
@@ -289,7 +310,10 @@ def gitext_freeze(externals, messages):
 @click.argument('external', nargs=-1, metavar='URL')
 def gitext_remove(external):
     """Remove the externals at the given repository URLs """
-    from git_externals import load_gitexts, dump_gitexts
+    if __package__ is None:
+        from git_externals  import load_gitexts, dump_gitexts
+    else:
+        from .git_externals import load_gitexts, dump_gitexts
 
     git_externals = load_gitexts()
 
@@ -306,12 +330,18 @@ def gitext_remove(external):
               help='Top level externals in which recurse into')
 def gitext_info(externals, recursive):
     """Print some info about the externals."""
-    from git_externals import gitext_recursive_info
+    if __package__ is None:
+        from git_externals  import gitext_recursive_info
+    else:
+        from .git_externals import gitext_recursive_info
     gitext_recursive_info('.', recursive=recursive, externals=externals)
 
 
 def enable_colored_output():
-    from git_externals import externals_root_path, get_entries
+    if __package__ is None:
+        from git_externals  import externals_root_path, get_entries
+    else:
+        from .git_externals import externals_root_path, get_entries
 
     for entry in get_entries():
         with chdir(os.path.join(externals_root_path(), entry)):

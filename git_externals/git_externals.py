@@ -177,7 +177,7 @@ def sparse_checkout(repo_name, repo, dirs):
         git('remote', 'add', '-f', 'origin', repo)
         git('config', 'core.sparsecheckout', 'true')
 
-        with open(os.path.join('.git', 'info', 'sparse-checkout'), 'wb') as fp:
+        with open(os.path.join('.git', 'info', 'sparse-checkout'), 'w') as fp:
             fp.write('{}\n'.format(externals_json_path()))
             for d in dirs:
                 # assume directories are terminated with /
